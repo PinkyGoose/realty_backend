@@ -1,19 +1,17 @@
-pub mod entity;
+pub mod entities;
 
 use axum::extract::Path;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{
-    debug_handler,
     extract::{Json, State},
     http::StatusCode,
     routing::post,
     Router,
 };
 use dotenv::dotenv;
-use entity::{picture, realtor_object};
+use entities::{picture, realtor_object};
 use image::{load_from_memory, ImageFormat};
-use realtor_object::Entity as RieltorObjectEntity;
 use sea_orm::ColumnTrait;
 use sea_orm::QueryFilter;
 use sea_orm::TransactionTrait;
@@ -22,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::io::Cursor;
 use tokio::net::TcpListener;
+use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreatedEntity {
@@ -66,6 +65,7 @@ pub struct AppState {
     pub db: DatabaseConnection,
 }
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RealtorObjectDetails {
     id: Uuid,
     name: String,
@@ -77,6 +77,7 @@ pub struct RealtorObjectDetails {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RealtorObjectSummary {
     id: Uuid,
     name: String,
@@ -112,6 +113,7 @@ pub async fn list_realtor_objects(
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RealtorObjectPayload {
     name: String,
     phone: String,
@@ -164,7 +166,6 @@ pub async fn create_realtor_object(
         id: realtor_object.id,
     }))
 }
-#[debug_handler]
 pub async fn get_realtor_object(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
@@ -211,6 +212,10 @@ async fn main() {
     dotenv().ok();
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let db = Database::connect(&database_url).await.unwrap();
+    let cors = CorsLayer::new()
+        .allow_origin(Any) // Разрешаем запросы с любого источника
+        .allow_methods(Any) // Разрешенные HTTP-методы
+        .allow_headers(Any); // Разрешаем любые заголовки
 
     let state = AppState { db };
 
@@ -218,7 +223,8 @@ async fn main() {
         .route("/realtor_objects", post(create_realtor_object))
         .route("/realtor_objects", get(list_realtor_objects))
         .route("/realtor_objects/:id", get(get_realtor_object))
-        .with_state(state);
+        .with_state(state)
+        .layer(cors);
 
     println!("Server running on http://localhost:4000");
     match TcpListener::bind("0.0.0.0:4000").await {
