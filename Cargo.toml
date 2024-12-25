@@ -1,0 +1,28 @@
+[package]
+name = "realty_backend"
+version = "0.1.0"
+edition = "2021"
+authors = ["Lachugin PinkyGoose Vladimir <lachuginv@list.ru>"]
+
+[workspace]
+members = [".", "./migration"]
+
+[dependencies]
+
+migration = { path = "./migration" }
+#sea-orm = "1.1.3"
+http = "1.2.0"
+dotenv = "0.15.0"
+image = "0.25.5"
+uuid = { version = "1.11.0", features = ["v4"] }
+axum = { version = "0.7.9", features = ["macros"] }
+serde = { version = "1.0.216", features = ["derive"] }
+base64 = "0.22.1"
+tokio = { version = "1.42.0", features = ["full"] }
+tracing = "0.1.41"
+thiserror = "2.0.9"
+sea-query = "0.32.1"
+serde_json = "1.0.134"
+[dependencies.sea-orm]
+version = "1.1.3"
+features = ["debug-print", "runtime-tokio-native-tls", "sqlx-postgres"]
